@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Daily Time Calendar</title>
+  <title>PAA Time Calendar</title>
   <style>
     table {
       border-collapse: collapse;
@@ -21,20 +21,26 @@
   </style>
 </head>
 <body>
-
+<script>
+var availabilities = {
+  {% for (i,j), v in availabilities.items() %}
+  {{ f'{i},{j}' }}: v }},
+  {% endfor %}
+}
+</script>
 <table>
   <tr>
     <th>Time</th>
-    {% for date in dates %}
+    {%- for date in dates %}
     <th>{{ date }}</th>
     {% endfor %}
   </tr>
   
-  {% for time_slot in time_slots %}
+  {%- for i, time_slot in enumerate(time_slots) %}
   <tr>
     <td class="time-slot">{{ time_slot }}</td>
-    {% for _ in dates %}
-    <td></td>
+    {% for j in range(len(dates)) %}
+    <td id="{{ f'{i},{j}' }}">{{ len(availabilities.get((i,j)), '') or None }}</td>
     {% endfor %}
   </tr>
   {% endfor %}
