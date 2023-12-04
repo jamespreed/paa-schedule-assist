@@ -19,5 +19,5 @@ conda activate paa
 
 Run the script:
 ```
-python paascedule/paa.py
+python paa.py
 ```
