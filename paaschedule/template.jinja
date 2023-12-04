@@ -5,47 +5,101 @@
   <style>
     table {
       border-collapse: collapse;
-      width: 100%;
+      font-size: .9em;
     }
     th, td {
       border: 1px solid #ddd;
-      padding: 8px;
+      padding: 3px;
       text-align: center;
+      width: 220px;
     }
     th {
       background-color: #f2f2f2;
     }
-    td.time-slot {
-      font-weight: bold;
+    .appt-cnt[data-value="0"] {
+      color: transparent;
+    } 
+    .appt-cnt:not([data-value="0"]) {
+      cursor: pointer;
+    }
+    .container {
+      justify-content: center;
+      margin-left: 200px;
+      width: 80%;
     }
   </style>
 </head>
 <body>
-<script>
-var availabilities = {
-  {% for (i,j), v in availabilities.items() %}
-  {{ f'{i},{j}' }}: v }},
-  {% endfor %}
-}
-</script>
+<div class="container">
+
+<h1>Glebe Road - Arlington</h1>
 <table>
   <tr>
     <th>Time</th>
     {%- for date in dates %}
     <th>{{ date }}</th>
-    {% endfor %}
+    {%- endfor %}
   </tr>
   
-  {%- for i, time_slot in enumerate(time_slots) %}
-  <tr>
-    <td class="time-slot">{{ time_slot }}</td>
-    {% for j in range(len(dates)) %}
-    <td id="{{ f'{i},{j}' }}">{{ len(availabilities.get((i,j)), '') or None }}</td>
+  {%- for time in times %}
+    <tr>
+    <td class="time-slot">{{ time }}</td>
+    {%- for date in dates %}
+      <td class="appt-cnt" data-value="{{ data['GlebeRoadArlington'].get(date + 'T' + time, '') | length }}">
+        {{ data['GlebeRoadArlington'].get(date + 'T' + time, '') | length }}
+        <div style="display: none; text-align: left;">
+          <ul>
+            {%- for provider in data['GlebeRoadArlington'].get(date + 'T' + time, []) %}
+            <li>{{ provider }}</li>
+            {%- endfor %}
+          </ul>
+        </div>
+      </td>
     {% endfor %}
-  </tr>
+    </tr>
   {% endfor %}
-
 </table>
 
+<br>
+<h1>Walker Lane - Springfield</h1>
+<table>
+  <tr>
+    <th>Time</th>
+    {%- for date in dates %}
+    <th>{{ date }}</th>
+    {%- endfor %}
+  </tr>
+  
+  {%- for time in times %}
+    <tr>
+    <td class="time-slot">{{ time }}</td>
+    {%- for date in dates %}
+      <td class="appt-cnt" data-value="{{ data['WalkerLaneSpringfield'].get(date + 'T' + time, '') | length }}">
+        {{ data['WalkerLaneSpringfield'].get(date + 'T' + time, '') | length }}
+        <div style="display: none; text-align: left;">
+          <ul>
+            {%- for provider in data['WalkerLaneSpringfield'].get(date + 'T' + time, []) %}
+            <li>{{ provider }}</li>
+            {%- endfor %}
+          </ul>
+        </div>
+      </td>
+    {% endfor %}
+    </tr>
+  {% endfor %}
+
+</div>
+</table>
+<script>
+  const tds = document.querySelectorAll('td');
+  tds.forEach(td => {
+    const div = td.querySelector('div');
+    if (div) {
+      td.addEventListener('click', () => {
+        div.style.display = div.style.display === 'none' ? 'block' : 'none';
+      });
+    }
+  });
+</script>
 </body>
 </html>
