@@ -184,7 +184,7 @@ class PAAScheduleNabber:
         times = {}
         next_slot = {}
         for day in slots_by_day:
-            times[day['appt_date']] = [d['time'] for d in day['appt_slots']]
+            times[day['appt_date']] = [d['time'].rsplit(':', 1)[0] for d in day['appt_slots']]
             next_slot[day['appt_date']] = day.get('next_start_time')
             
         return {
@@ -253,7 +253,7 @@ class PAAScheduleNabber:
         )
 
         for appt_dict in appt_slots:
-            time_slots.append(appt_dict['time'])
+            time_slots.append(appt_dict['time'].rsplit(':', 1)[0])
             
         return time_slots, more_next_time
 
@@ -334,35 +334,48 @@ def provider_info_to_table_dicts(prov_info_list: list[ProviderInfo]):
         out = out_dicts[prov.facility]
         for date, times in prov.time_slots.items():
             for time in times:
-                key = f'{date}T{time}'
-                value = f'{prov.name} ({prov.degree})'
+                h, m = map(int, time.split(':'))
+                # coerce minutes to 10-minute intervals.
+                m_slot = 10 * (m // 10)
+                key = f'{date}T{h:0>2}:{m_slot:0>2}'
+                value = f'[{time}] {prov.name} ({prov.degree})'
                 out[key].append(value)
     return {k.name: dict(v) for k, v in out_dicts.items()}
 
 
-def render_html(dates: list[str], table_dicts: dict):
-    """
-    Renders a simple template to show the currently available 
-    time slots.
-    """
-    template = """
+APPT_TEMPLATE = """
 <!DOCTYPE html>
-<html>
+<html lang="us-en">
 <head>
   <title>PAA Time Calendar</title>
   <style>
+    body {
+      background-color: #2b1d1d;
+      color: #ceae77;
+    }
     table {
       border-collapse: collapse;
       font-size: .9em;
     }
     th, td {
-      border: 1px solid #ddd;
+      border: 1px solid #222;
       padding: 3px;
       text-align: center;
-      width: 220px;
+      width: 22em;
+    }
+    .time-slot {
+        width: 5em;
     }
     th {
-      background-color: #f2f2f2;
+      background-color: #423F3E ;
+    }
+    td {
+      vertical-align: text-top;
+      background-color: #412c2c;
+    }
+    tr:nth-child(even) td {
+      /* Alternate row background color */
+      background-color: #3d2626;
     }
     .appt-cnt[data-value="0"] {
       color: transparent;
@@ -372,8 +385,8 @@ def render_html(dates: list[str], table_dicts: dict):
     }
     .container {
       justify-content: center;
-      margin-left: 200px;
-      width: 80%;
+      margin-left: 50px;
+      width: 95%;
     }
   </style>
 </head>
@@ -383,7 +396,7 @@ def render_html(dates: list[str], table_dicts: dict):
 <h1>Glebe Road - Arlington</h1>
 <table>
   <tr>
-    <th>Time</th>
+    <th class="time-slot">Time</th>
     {%- for date in dates %}
     <th>{{ date }}</th>
     {%- endfor %}
@@ -397,7 +410,7 @@ def render_html(dates: list[str], table_dicts: dict):
         {{ data['GlebeRoadArlington'].get(date + 'T' + time, '') | length }}
         <div style="display: none; text-align: left;">
           <ul>
-            {%- for provider in data['GlebeRoadArlington'].get(date + 'T' + time, []) %}
+            {%- for provider in data['GlebeRoadArlington'].get(date + 'T' + time, []) | sort %}
             <li>{{ provider }}</li>
             {%- endfor %}
           </ul>
@@ -412,7 +425,7 @@ def render_html(dates: list[str], table_dicts: dict):
 <h1>Walker Lane - Springfield</h1>
 <table>
   <tr>
-    <th>Time</th>
+    <th class="time-slot">Time</th>
     {%- for date in dates %}
     <th>{{ date }}</th>
     {%- endfor %}
@@ -439,25 +452,34 @@ def render_html(dates: list[str], table_dicts: dict):
 </div>
 </table>
 <script>
-  const tds = document.querySelectorAll('td');
-  tds.forEach(td => {
-    const div = td.querySelector('div');
-    if (div) {
-      td.addEventListener('click', () => {
-        div.style.display = div.style.display === 'none' ? 'block' : 'none';
+  const trs = document.querySelectorAll('tr');
+  trs.forEach(tr => {
+    if (tr.querySelector('li')) {
+      tr.addEventListener('click', () => {
+        var divs = tr.querySelectorAll('div');
+        divs.forEach(div => {
+          div.style.display = div.style.display === 'none' ? 'block' : 'none';
+        })
       });
     }
   });
 </script>
 </body>
 </html>
+"""
+
+
+def render_html(dates: list[str], table_dicts: dict):
+    """
+    Renders a simple template to show the currently available 
+    time slots.
     """
     start = dt.datetime(2020, 1, 1, 6, 0, 0)
     times = [
-        (start + dt.timedelta(minutes=10 * i)).isoformat().split('T')[1]
+        (start + dt.timedelta(minutes=10 * i)).time().strftime('%H:%M')
         for i in range(85)
     ]
-    h = Template(template).render(
+    h = Template(APPT_TEMPLATE).render(
         dates = dates,
         times = times,
         data = table_dicts
