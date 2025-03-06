@@ -1,6 +1,7 @@
 import requests
 import datetime as dt
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed, Future
 from typing import TypedDict, NamedTuple
 
 
@@ -208,8 +209,19 @@ class PAAScheduleRetriever:
 
     def get_all_available_times(self, n_days: int=3):
         providers = self.get_providers()
-        provider_slots: list[dict] = []
+        executor = ThreadPoolExecutor(max_workers=8)
+        futures: list[Future] = []
         for provider in providers:
-            slots = self._get_provider_slots(provider, n_days)
+            futures.append(
+                executor.submit(
+                    self._get_provider_slots,
+                    provider, 
+                    n_days
+                )
+            )
+        for i, f in enumerate(as_completed(futures), 1):
+            print(f'\r Getting schedules: {i} / {len(futures)}', end='')
+            slots = f.result()
             
+
         
