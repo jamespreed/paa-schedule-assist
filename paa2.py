@@ -245,33 +245,48 @@ class Renderer:
         self.head = dedent(
         """
         <!DOCTYPE html>
-        <html>
+        <html lang="us-en">
         <head>
         <title>PAA Time Calendar</title>
         <style>
+            body {
+                background-color: #2b1d1d;
+                color: #ceae77;
+            }
             table {
                 border-collapse: collapse;
                 font-size: .9em;
             }
             th, td {
-                border: 1px solid #ddd;
+                border: 1px solid #222;
                 padding: 3px;
                 text-align: center;
-                width: 220px;
+                width: 22em;
+            }
+            .time-slot {
+                width: 5em;
             }
             th {
-                background-color: #f2f2f2;
+                background-color: #423F3E ;
+            }
+            td {
+                vertical-align: text-top;
+                background-color: #412c2c;
+            }
+            tr:nth-child(even) td {
+                /* Alternate row background color */
+                background-color: #3d2626;
             }
             .appt-cnt[data-value="0"] {
-                color: transparent;
+                 color: transparent;
             } 
             .appt-cnt:not([data-value="0"]) {
                 cursor: pointer;
             }
             .container {
                 justify-content: center;
-                margin-left: 200px;
-                width: 80%;
+                margin-left: 50px;
+                width: 95%;
             }
         </style>
         </head>
@@ -283,15 +298,17 @@ class Renderer:
         """
         </div>
         <script>
-            const tds = document.querySelectorAll('td');
-            tds.forEach(td => {
-                const div = td.querySelector('div');
-                if (div) {
-                    td.addEventListener('click', () => {
-                        div.style.display = div.style.display === 'none' ? 'block' : 'none';
-                    });
-                }
+        const trs = document.querySelectorAll('tr');
+        trs.forEach(tr => {
+            if (tr.querySelector('li')) {
+            tr.addEventListener('click', () => {
+                var divs = tr.querySelectorAll('div');
+                divs.forEach(div => {
+                    div.style.display = div.style.display === 'none' ? 'block' : 'none';
+                })
             });
+            }
+        });
         </script>
         </body>
         </html>
