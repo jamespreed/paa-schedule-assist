@@ -4,11 +4,11 @@ Create a more user-friendly view of the provider schedule for Pediatric Associat
 ## Environment
 Create the environment using:
 ```
-conda create -n paa "python>=3.10.*" jinja2 lxml requests tqdm
+conda create -n paa requests
 ```
 or
 ```
-pip install jinja2 lxml requests tqdm
+pip install requests
 ```
 
 ## Usage
