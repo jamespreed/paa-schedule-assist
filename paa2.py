@@ -210,20 +210,21 @@ class PAAScheduleRetriever:
     def get_all_available_times(self, n_days: int=3):
         providers = self.get_providers()
         executor = ThreadPoolExecutor(max_workers=8)
-        futures: dict[Future, ] = []
-        all_slots: list[FacilityDateTimeSlot] = []
+        futures: dict[Future, ProviderInfo] = {}
+        slots_dict: dict[FacilityDateTimeSlot, list[ProviderInfo]] = {}
         for provider in providers:
-            futures.append(
-                executor.submit(
-                    self._get_provider_slots,
-                    provider, 
-                    n_days
-                )
+            f = executor.submit(
+                self._get_provider_slots,
+                provider, 
+                n_days
             )
+            futures[f] = provider
         for i, f in enumerate(as_completed(futures), 1):
             print(f'\r Getting schedules: {i} / {len(futures)}', end='')
             slots = f.result()
-            all_slots.extend(slots)
-        return all_slots
+            provider = futures[f]
+            for slot in slots:
+                slots_dict.setdefault(slot, []).append(provider)
+        return slots_dict
 
         
