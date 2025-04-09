@@ -47,6 +47,16 @@ def payload_to_bytes(payload: dict) -> bytes:
     return '&'.join(f'{k}={v}' for k, v in payload.items()).encode()
 
 
+def bin_time(t: str, minutes: int=15):
+    """
+    Bins the time into `minutes` intervals.  Drops the seconds.
+    I.e. "12:40:00" -> "12:30" when minutes=15
+    """
+    h, m, *_ = t.split(':')
+    m_bin = (int(m) // minutes) * minutes
+    return f'{h}:{m_bin:0>2}'
+
+
 class PAAScheduleRetriever:
     HOST_ACTION = 'https://healow.com/apps/HealowWebController?action'
     PROVIDER_LIST_URL = f'{HOST_ACTION}=GetAvilableApptProvidersList'
@@ -185,7 +195,7 @@ class PAAScheduleRetriever:
             appts = appts_info.get('appt_slots', [])
             for appt in appts:
                 time_slots.append(
-                    FacilityDateTimeSlot(provider['facility_id'], appt['date'], appt['time'])
+                    FacilityDateTimeSlot(provider['facility_id'], appt['date'], bin_time(appt['time']))
                 )
         return time_slots
 
