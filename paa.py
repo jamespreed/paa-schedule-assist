@@ -399,3 +399,19 @@ class Renderer:
         content = '\n'.join(sections)
         html = f'{self.head}\n{content}\n{self.tail}'
         return re.sub(r'\n\s*\n', r'\n', html)
+
+
+if __name__ == '__main__':
+    import webbrowser
+    from pathlib import Path
+
+    paa = PAAScheduleRetriever()
+    renderer = Renderer()
+    slots_dict = paa.get_all_available_times()
+    html = renderer.render(slots_dict)
+    file = Path('PAA-Schedule.html').resolve()
+    with file.open('w') as fp:
+        print(f'Writing schedule to:\n  {file}')
+        fp.write(html)
+    webbrowser.open_new(file.as_uri())
+    
