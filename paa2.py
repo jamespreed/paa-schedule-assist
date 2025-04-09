@@ -87,9 +87,9 @@ class PAAScheduleRetriever:
         }
         self.sess.headers.update(headers)
 
-    def get_providers(self) -> dict[int, list[dict[str, str]]]:
+    def get_providers(self) -> list[ProviderInfo]:
         """
-        Returns a dictionary mapping facility id to a list of provider details.
+        Returns a list of provider info.
         """
 
         payload_base = {
@@ -211,6 +211,7 @@ class PAAScheduleRetriever:
         providers = self.get_providers()
         executor = ThreadPoolExecutor(max_workers=8)
         futures: list[Future] = []
+        all_slots: list[FacilityDateTimeSlot] = []
         for provider in providers:
             futures.append(
                 executor.submit(
@@ -222,6 +223,7 @@ class PAAScheduleRetriever:
         for i, f in enumerate(as_completed(futures), 1):
             print(f'\r Getting schedules: {i} / {len(futures)}', end='')
             slots = f.result()
-            
+            all_slots.extend(slot)
+        return all_slots
 
         
