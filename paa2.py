@@ -223,7 +223,7 @@ class PAAScheduleRetriever:
         for i, f in enumerate(as_completed(futures), 1):
             print(f'\r Getting schedules: {i} / {len(futures)}', end='')
             slots = f.result()
-            all_slots.extend(slot)
+            all_slots.extend(slots)
         return all_slots
 
         
