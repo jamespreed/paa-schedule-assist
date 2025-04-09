@@ -2,6 +2,7 @@ import requests
 import datetime as dt
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed, Future
+from textwrap import dedent, indent
 from typing import TypedDict, NamedTuple
 
 
@@ -238,3 +239,146 @@ class PAAScheduleRetriever:
         return slots_dict
 
         
+
+class Renderer:
+    def __init__(self):
+        self.head = dedent(
+        """
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <title>PAA Time Calendar</title>
+        <style>
+            table {
+                border-collapse: collapse;
+                font-size: .9em;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 3px;
+                text-align: center;
+                width: 220px;
+            }
+            th {
+                background-color: #f2f2f2;
+            }
+            .appt-cnt[data-value="0"] {
+                color: transparent;
+            } 
+            .appt-cnt:not([data-value="0"]) {
+                cursor: pointer;
+            }
+            .container {
+                justify-content: center;
+                margin-left: 200px;
+                width: 80%;
+            }
+        </style>
+        </head>
+        <body>
+        <div class="container">
+        """
+        )
+        self.tail = dedent(
+        """
+        </div>
+        <script>
+            const tds = document.querySelectorAll('td');
+            tds.forEach(td => {
+                const div = td.querySelector('div');
+                if (div) {
+                    td.addEventListener('click', () => {
+                        div.style.display = div.style.display === 'none' ? 'block' : 'none';
+                    });
+                }
+            });
+        </script>
+        </body>
+        </html>
+        """
+        )
+    
+    def _render_cell(self, providers: list[ProviderInfo]):
+        n = len(providers)
+        items = '\n'.join([
+            (
+                f"<li>{p['provider_fname']} {p['provider_lname']} "
+                f"({p['provider_degree']})</li>"
+            )
+            for p in providers
+        ])
+
+        if n:
+            ul_str = dedent("""
+                <ul>
+                {items}
+                </ul>
+            """).format(items=items)
+        else:
+            ul_str = ''
+        
+        cell = dedent(f"""
+        <td class="appt-cnt" data-value="{n}">
+            {n if n else ''}
+            <div style="display: none; text-align: left;">
+            {{ul_str}}
+            </div>
+        </td>
+        """).format(ul_str=indent(ul_str, '    '))
+        return cell
+
+    def _render_slot_table(
+        self,
+        label: str,
+        facility_id: str,
+        times: list[str], 
+        dates: list[str],
+        slot_dict: dict[FacilityDateTimeSlot, list[ProviderInfo]],
+        ) -> str:
+        """
+        
+        """
+        h1 = f'<h1>{label}</h1>'
+        table_headers = ''.join([f'<th>{x}</th>' for x in ['Times'] + dates])
+        table_rows = []
+        for time in times:
+            row_items = []
+            for date in dates:
+                key = (facility_id, date, time)
+                providers = slot_dict.get(key, [])
+                row_items.append(self._render_cell(providers))
+            row = f"""
+            <tr>
+            <td class="time-slot">{time}</td>
+            {indent('\n'.join(row_items), '              ')}
+            </tr>
+            """
+            table_rows.append(row)
+
+        return dedent(f"""
+        {h1}
+        <table>
+        {table_headers}
+        {'\n'.join(table_rows)}
+        </table>
+        """)
+
+    def render(
+        self, 
+        slot_provider_dict: dict[FacilityDateTimeSlot, list[ProviderInfo]],
+        ) -> str:
+        """
+        Creates the HTML for the slot to providers mapping.
+        """
+        times = sorted({slot.time for slot in slot_provider_dict})
+        dates = sorted({slot.date for slot in slot_provider_dict})
+        fac_ids = sorted({slot.facility_id for slot in slot_provider_dict})
+        sections = []
+        for fac_id in fac_ids:
+            label = facility_ids[fac_id]
+            sections.append(
+                self._render_slot_table(label, fac_id, times, dates, slot_provider_dict)
+            )
+        content = '\n'.join(sections)
+        html = f'{self.head}\n{content}\n{self.tail}'
+        return re.sub(r'\n\s*\n', r'\n', html)
